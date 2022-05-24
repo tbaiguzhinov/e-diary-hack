@@ -1,4 +1,5 @@
 import random
+import logging
 
 from datacenter.models import Mark, Schoolkid, \
     Lesson, Chastisement, Commendation
@@ -10,13 +11,17 @@ def get_schoolkid(schoolkid_name):
     try:
         return Schoolkid.objects.get(full_name__contains=schoolkid_name)
     except Schoolkid.MultipleObjectsReturned:
-        raise Exception("Найдено несколько учеников с таким именем")
+        logging.error("Найдено несколько учеников с таким именем")
+        return
     except Schoolkid.DoesNotExist:
-        raise Exception("Учеников с таким именем не обнаружено")
+        logging.error("Учеников с таким именем не обнаружено")
+        return
 
 
 def fix_marks(schoolkid_name):
     schoolkid = get_schoolkid(schoolkid_name)
+    if schoolkid is None:
+        return
     bad_marks = Mark.objects.filter(schoolkid=schoolkid.id, points__lt=4)
     for mark in bad_marks:
         mark.points = 5
@@ -30,6 +35,8 @@ def remove_chastisements(schoolkid_name):
         print("Не указано имя ученика")
         return
     schoolkid = get_schoolkid(schoolkid_name)
+    if schoolkid is None:
+        return
     chastisements = Chastisement.objects.filter(schoolkid=schoolkid.id)
     chastisements.delete()
     print(f"Замечания ученика {schoolkid.full_name} удалены")
@@ -69,6 +76,8 @@ def create_commendation(schoolkid_name, subject_name):
         "Теперь у тебя точно все получится!",
     ]
     schoolkid = get_schoolkid(schoolkid_name)
+    if schoolkid is None:
+        return
     class_lessons = Lesson.objects.filter(
         year_of_study=schoolkid.year_of_study,
         group_letter=schoolkid.group_letter
